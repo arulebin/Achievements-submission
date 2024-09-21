@@ -28,6 +28,7 @@ module.exports = async (req, res) => {
     if (req.method === 'POST') {
         upload.array('photos')(req, res, async (err) => {
             if (err) {
+                console.error('Upload error:', err); 
                 return res.status(500).send('Error uploading files.');
             }
 
@@ -49,6 +50,7 @@ module.exports = async (req, res) => {
                 const info = await transporter.sendMail(mailOptions);
                 res.status(200).send('Message sent: ' + info.messageId);
             } catch (error) {
+                console.error('Mail sending error:', error); 
                 res.status(500).send('Error occurred: ' + error.message);
             }
         });
