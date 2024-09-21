@@ -11,7 +11,7 @@ async function sendEmail(data) {
             formData.append('photos', photo);
         });
 
-        const response = await fetch('/api/sendEmail', {
+        const response = await fetch(`/netlify/functions/sendEmail`, {
             method: 'POST',
             body: formData
         });
