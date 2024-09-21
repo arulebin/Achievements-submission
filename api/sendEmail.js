@@ -1,12 +1,14 @@
 const cloudinary = require('cloudinary').v2;
 const nodemailer = require('nodemailer');
 const mailgun = require('nodemailer-mailgun-transport');
+const multer = require('multer');
+const upload = multer();
 
 // Cloudinary configuration
 cloudinary.config({
-    cloud_name: process.env.CLOUD_NAME, 
-    api_key: process.env.CLOUDINARY_API_KEY, 
-    api_secret: process.env.CLOUDINARY_API_SECRET 
+    cloud_name: process.env.CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
 const auth = {
@@ -19,20 +21,19 @@ const transporter = nodemailer.createTransport(mailgun(auth));
 
 module.exports = async (req, res) => {
     if (req.method === 'POST') {
-        let body = '';
-
-        req.on('data', chunk => {
-            body += chunk.toString();
-        });
-
-        req.on('end', async () => {
-            const data = JSON.parse(body);
+        // Use Multer to parse multipart/form-data
+        upload.array('photos')(req, res, async (err) => {
+            if (err) {
+                return res.status(500).send('Error uploading files');
+            }
 
             try {
+                const { name, rollno, achievement, date, description } = req.body;
+                const files = req.files;
                 const uploadedPhotos = await Promise.all(
-                    data.photos.map(photo => {
-                        return cloudinary.uploader.upload(photo.path, {
-                            folder: 'achievements', 
+                    files.map(file => {
+                        return cloudinary.uploader.upload(file.path, {
+                            folder: 'achievements',
                             use_filename: true
                         });
                     })
@@ -47,7 +48,7 @@ module.exports = async (req, res) => {
                     from: 'mailgun@sandboxa2b0867851a84ee7862313e50e288bd0.mailgun.org',
                     to: 'ebincreations@gmail.com',
                     subject: 'Achievements Submission',
-                    text: `Name: ${data.name}\nRoll Number: ${data.rollno}\nAchievement: ${data.achievement}\nDate: ${data.date}\nDescription: ${data.description}`,
+                    text: `Name: ${name}\nRoll Number: ${rollno}\nAchievement: ${achievement}\nDate: ${date}\nDescription: ${description}`,
                     attachments: attachmentURLs.map(file => ({
                         filename: file.name,
                         path: file.url
